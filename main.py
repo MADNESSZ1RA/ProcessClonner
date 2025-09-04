@@ -1,12 +1,27 @@
+import argparse
 from src.database import Database
 from src.system import System
 
-db = Database()
-system = System(db, 
-                # programm_name="v2RayTun.exe",
-                pid=15432
-                )
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pid", type=int, help="PID of the process to clone")
+    parser.add_argument("--count", type=int, default=1, help="Number of clones")
+    parser.add_argument("--remove", action="store_true", help="Remove all clones")
+    parser.add_argument("--father_pid", type=int, help="Simulated parent PID for clones")  # <-- добавлено
+
+    args = parser.parse_args()
+    db = Database()
+    system = System(db)
+
+    if args.remove:
+        system.remove_clones()
+        return
+
+    if not args.pid:
+        print("Please specify --pid")
+        return
+
+    system.clone_process(pid=args.pid, count=args.count, father_pid=args.father_pid)  # <-- передаём
 
 if __name__ == "__main__":
-    system.clone_suspended_process(10)
-    # system.remove_all_clones()
+    main()

@@ -1,22 +1,36 @@
 import sqlite3
-
+from typing import List, Optional
 
 class Database:
     def __init__(self, db_path: str = "db.db"):
-        self._connection = sqlite3.connect(db_path, check_same_thread=False)
-        self.create_tables()
+        self.conn = sqlite3.connect(db_path)
+        self._create_table()
 
-    def create_tables(self):
-        _cursor = self._connection.cursor()
-        _cursor.execute("""
-            CREATE TABLE IF NOT EXISTS clones (
-                pid INTEGER PRIMARY KEY,
-                exe_path TEXT NOT NULL
-            )
+    def _create_table(self):
+        cursor = self.conn.cursor()
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS clones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            original_pid INTEGER,
+            clone_pid INTEGER
+        )
         """)
-        self._connection.commit()
+        self.conn.commit()
 
-    def drop_tables(self):
-        _cursor = self._connection.cursor()
-        _cursor.execute("DROP TABLE IF EXISTS clones")
-        self._connection.commit()
+    def add_clone(self, original_pid: int, clone_pid: int):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "INSERT INTO clones (original_pid, clone_pid) VALUES (?, ?)",
+            (original_pid, clone_pid)
+        )
+        self.conn.commit()
+
+    def get_clones(self) -> List[tuple]:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, original_pid, clone_pid FROM clones")
+        return cursor.fetchall()
+
+    def remove_all_clones(self):
+        cursor = self.conn.cursor()
+        cursor.execute("DELETE FROM clones")
+        self.conn.commit()
