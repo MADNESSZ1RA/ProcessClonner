@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
         ZeroMemory(&si, sizeof(si));
         si.StartupInfo.cb = sizeof(STARTUPINFOEXA);
 
-        // Скрыть окно
         si.StartupInfo.dwFlags |= STARTF_USESHOWWINDOW;
         si.StartupInfo.wShowWindow = SW_HIDE;
 
@@ -81,7 +80,6 @@ int main(int argc, char *argv[])
         {
             std::cout << pi.dwProcessId << std::endl;
 
-            // Разморозка процесса
             ResumeThread(pi.hThread);
 
             CloseHandle(pi.hThread);
