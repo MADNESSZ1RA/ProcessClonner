@@ -2,46 +2,53 @@
 #include <iostream>
 #include <string>
 
-int main(int argc, char* argv[]) {
-    if (argc < 4) {
+int main(int argc, char *argv[])
+{
+    if (argc < 4)
+    {
         std::cerr << "Usage: process_clone_ext.exe <original_pid> <father_pid> <count>\n";
         return 1;
     }
 
     DWORD original_pid = std::stoi(argv[1]);
-    DWORD father_pid   = std::stoi(argv[2]);
-    int count          = std::stoi(argv[3]);
+    DWORD father_pid = std::stoi(argv[2]);
+    int count = std::stoi(argv[3]);
 
-    // Получаем путь exe оригинального процесса
     HANDLE hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, original_pid);
-    if (!hProc) {
+    if (!hProc)
+    {
         std::cerr << "Cannot open original process\n";
         return 1;
     }
 
     char exePath[MAX_PATH];
     DWORD size = MAX_PATH;
-    if (!QueryFullProcessImageNameA(hProc, 0, exePath, &size)) {
+    if (!QueryFullProcessImageNameA(hProc, 0, exePath, &size))
+    {
         std::cerr << "Cannot get executable path\n";
         CloseHandle(hProc);
         return 1;
     }
     CloseHandle(hProc);
 
-    // Для каждого клона
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++)
+    {
         STARTUPINFOEXA si;
         ZeroMemory(&si, sizeof(si));
         si.StartupInfo.cb = sizeof(STARTUPINFOEXA);
 
-        // Создаём атрибут-лист для указания Parent PID
+        // Скрыть окно
+        si.StartupInfo.dwFlags |= STARTF_USESHOWWINDOW;
+        si.StartupInfo.wShowWindow = SW_HIDE;
+
         SIZE_T attrSize = 0;
         InitializeProcThreadAttributeList(NULL, 1, 0, &attrSize);
         si.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), 0, attrSize);
         InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &attrSize);
 
         HANDLE parentHandle = OpenProcess(PROCESS_CREATE_PROCESS, FALSE, father_pid);
-        if (!parentHandle) {
+        if (!parentHandle)
+        {
             std::cerr << "Cannot open father process\n";
             DeleteProcThreadAttributeList(si.lpAttributeList);
             HeapFree(GetProcessHeap(), 0, si.lpAttributeList);
@@ -55,8 +62,7 @@ int main(int argc, char* argv[]) {
             &parentHandle,
             sizeof(HANDLE),
             NULL,
-            NULL
-        );
+            NULL);
 
         PROCESS_INFORMATION pi;
         BOOL result = CreateProcessA(
@@ -69,14 +75,20 @@ int main(int argc, char* argv[]) {
             NULL,
             NULL,
             &si.StartupInfo,
-            &pi
-        );
+            &pi);
 
-        if (result) {
+        if (result)
+        {
             std::cout << pi.dwProcessId << std::endl;
+
+            // Разморозка процесса
+            ResumeThread(pi.hThread);
+
             CloseHandle(pi.hThread);
             CloseHandle(pi.hProcess);
-        } else {
+        }
+        else
+        {
             std::cerr << "Failed to create clone\n";
         }
 
