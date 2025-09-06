@@ -7,7 +7,7 @@ class System:
         self.db = db
 
     def clone_process(self, pid: int, count: int = 1, father_pid: int = 0):
-        args = ["process_clone.exe", str(pid), str(father_pid), str(count)]
+        args = ["src/process_clone.exe", str(pid), str(father_pid), str(count)]
         result = subprocess.run(args, capture_output=True, text=True)
         if result.returncode != 0:
             print(result.stderr)
